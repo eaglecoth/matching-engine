@@ -11,6 +11,7 @@ public class Order {
     private long size;
     private long clientId;
     private LimitLevel limitLevel;
+    private long clientOrderId;
 
     public void setTail(Order order){
         tail = order;
@@ -51,6 +52,11 @@ public class Order {
         return orderId;
     }
 
+    /**
+     * Cancels orders and ties up adjacent orders in the linked list of orders on the particular price.
+     *
+     * @return true if this was the last order on the particular price. If so, the limit level should be discarded, else false
+     */
     public boolean cancelOrder(){
         if(head != null && tail != null){
             tail.setHead(head);
@@ -68,6 +74,13 @@ public class Order {
             return true;
         }
     }
+    public long getClientOrderId() {
+        return clientOrderId;
+    }
+
+    public void setClientOrderId(long clientOrderId) {
+        this.clientOrderId = clientOrderId;
+    }
 
     public void populate(long id, Message message, LimitLevel limitLevel) {
         this.orderId = id;
@@ -76,5 +89,8 @@ public class Order {
         this.side = message.getSide();
         this.size = message.getQuantity();
         this.clientId = message.getClientId();
+        this.clientOrderId = message.getClientOrderId();
     }
+
+
 }

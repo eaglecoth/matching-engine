@@ -43,7 +43,7 @@ public class MatchingEngineRunner {
         ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap = new ConcurrentHashMap<>();
         ConcurrentHashMap<Long, Order> idToOrderMap =  new ConcurrentHashMap<>();
 
-        OrderBookDistributor orderBookDistributor = new OrderBookDistributor(distributorInboundQueue, queues, clientIdToOrderMap, messagePool, idToOrderMap);
+        OrderBookDistributor orderBookDistributor = new OrderBookDistributor(distributorInboundQueue, queues, clientIdToOrderMap, messagePool);
 
         OrderBookProcessor btcBidProcessor = new BidOrderBookProcessor(CcyPair.BTCUSD, orderPool, executionPool, messagePool, distributorInboundQueue, executionPublishQueue, orderIdCounter);
         OrderBookProcessor btcOfferProcessor = new OfferOrderBookProcessor(CcyPair.BTCUSD, orderPool, executionPool, messagePool, distributorInboundQueue, executionPublishQueue, orderIdCounter);

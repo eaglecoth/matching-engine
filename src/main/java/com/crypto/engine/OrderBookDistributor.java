@@ -116,12 +116,20 @@ public class OrderBookDistributor {
 
             case CancelOrder:
             case CancelAllOrders:
-                btcUsdBidBookQueue.add(message);
-                btcUsdOfferBookQueue.add(message);
-                ethUsdBidBookQueue.add(message);
-                ethUsdOfferBookQueue.add(message);
-                break;
+                //To avoid having to synchronize between threads. Send the same to all. Let them do their stuff.
+                sendClonedMessage(btcUsdBidBookQueue, message);
+                sendClonedMessage(btcUsdOfferBookQueue, message);
+                sendClonedMessage(ethUsdBidBookQueue, message);
+                sendClonedMessage(ethUsdOfferBookQueue, message);
+                messagePool.returnObject(message);
+                return;
         }
+    }
+
+    private void sendClonedMessage(ConcurrentLinkedQueue<Message> queue, Message message) {
+        Message cloneMessage = messagePool.acquireObject();
+        cloneMessage.populateFields(message);
+        queue.add(cloneMessage);
     }
 
     public void shutdown() {

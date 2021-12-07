@@ -31,6 +31,12 @@ public class BidOrderBookProcessor extends OrderBookProcessor{
         return limitLevelToExecute.getNextLower();
     }
 
+    /**
+     * Limits are ordered in a sorted double linked list. When a new limit arrives, we traverse the list and insert
+     * at the appropriate spot
+     * @param newLimitLevel new price level to be added
+     * @param currentLimitLevel limit price level to compare to, normally start at top of book
+     */
     protected void insertInChain(LimitLevel newLimitLevel, LimitLevel currentLimitLevel) {
             if (newLimitLevel.getPrice() > currentLimitLevel.getPrice()) {
                 LimitLevel newHigher = currentLimitLevel.getNextHigher();

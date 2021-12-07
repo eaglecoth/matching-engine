@@ -11,6 +11,7 @@ public class Execution {
     private CcyPair pair;
     private Side side;
     private long orderId;
+    private long clientOrderId;
 
     public void setClientId(long clientId) {
         this.clientId = clientId;
@@ -72,5 +73,13 @@ public class Execution {
 
     public void setOrderId(long orderId) {
         this.orderId = orderId;
+    }
+
+    public long getClientOrderId() {
+        return clientOrderId;
+    }
+
+    public void setClientOrderId(long clientOrderId) {
+        this.clientOrderId = clientOrderId;
     }
 }

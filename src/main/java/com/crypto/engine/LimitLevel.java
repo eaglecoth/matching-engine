@@ -6,16 +6,17 @@ import com.crypto.feed.ObjectPool;
 
 public class LimitLevel {
 
-    private final OrderBookProcessor processor;
+    private OrderBookProcessor processor;
     private Order insideOfBookOrder;
     private Order outsideOfBookOrder;
     private LimitLevel nextHigher;
     private LimitLevel nextLower;
     ObjectPool<Execution> executionObjectPool;
-    private final long price;
-    
+    private long price;
 
-    public LimitLevel(Long price, ObjectPool<Execution> executionObjectPool, OrderBookProcessor processor) {
+    public LimitLevel(){}
+
+    public void populate(Long price, ObjectPool<Execution> executionObjectPool, OrderBookProcessor processor) {
 
         this.executionObjectPool = executionObjectPool;
         this.insideOfBookOrder = null;

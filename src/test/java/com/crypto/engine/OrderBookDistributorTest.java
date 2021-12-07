@@ -64,51 +64,54 @@ public class OrderBookDistributorTest {
     public void testSingleLimitVsMarket() throws InterruptedException {
 
         //Base case, check a limit order and a market order can match
+        int client1LimitOrderId = 1;
+        int client2LimitOrderId = 2;
+        int clientOrderId = 1;
 
-        Message message = prepareMessage(1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
+
+        Message message = prepareMessage(client1LimitOrderId, clientOrderId, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
         distributorInboundQueue.add(message);
 
-        Thread.sleep(100);
+        waitAndAssert(1, 2);
+        assertExecution(client1LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.OrderAccepted);
 
-        message = prepareMessage(2, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 100);
+
+        message = prepareMessage(client2LimitOrderId, clientOrderId, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 100);
         distributorInboundQueue.add(message);
 
-        while ( executionPublishQueue.size() < 2){
-            System.out.println("Waiting for Execution to arrive...");
-            Thread.sleep(100);
-        }
-        assertEquals("Two Executions Expected", executionPublishQueue.size(), 2);
+        waitAndAssert(2, 2);
 
-        Execution execution = executionPublishQueue.poll();
-        assertExecution(execution, 2, CcyPair.BTCUSD, 1, 100, Side.Offer);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, 1, CcyPair.BTCUSD, 1, 100, Side.Bid);
+        assertExecution(client2LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Offer, ExecutionType.Fill);
+        assertExecution(client1LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.Fill);
 
     }
 
     @Test
     public void testCancel() throws InterruptedException {
 
-        //Base case, check a limit order and a market order can match
-
-        Message message = prepareMessage(1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
+        //Base case, check a limit order can be cancelled
+        int clientId1 = 1;
+        int clientId2 = 2;
+        int clientOrderId = 7;
+        Message message = prepareMessage(1,clientOrderId, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
         distributorInboundQueue.add(message);
 
-        Thread.sleep(100);
+        waitAndAssert(1, 2);
+        long orderId = assertExecution(clientId1, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.OrderAccepted);
 
-        message = prepareMessage(2, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 100);
+        message = prepareCancel(orderId);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertCancel(clientId1,orderId, clientOrderId);
+
+
+        //Check that a market order gets rejected for its full amount
+        message = prepareMessage(clientId2,1, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 250);
         distributorInboundQueue.add(message);
 
-        while ( executionPublishQueue.size() < 2){
-            System.out.println("Waiting for Execution to arrive...");
-            Thread.sleep(100);
-        }
-        assertEquals("Two Executions Expected", executionPublishQueue.size(), 2);
+        waitAndAssert(1, 2);
+        assertReject(clientId2,orderId, 1, 250);
 
-        Execution execution = executionPublishQueue.poll();
-        assertExecution(execution, 2, CcyPair.BTCUSD, 1, 100, Side.Offer);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, 1, CcyPair.BTCUSD, 1, 100, Side.Bid);
 
     }
 
@@ -116,32 +119,32 @@ public class OrderBookDistributorTest {
     public void testDoubleLimitVsBigMarket() throws InterruptedException {
 
         //Test that a market order can partially fill on multiple limit orders
+        int clientId1 = 1;
+        int clientId2 = 2;
+        int clientId3 = 3;
 
-        Message message = prepareMessage(1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
+        Message message = prepareMessage(clientId1,1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
         distributorInboundQueue.add(message);
 
-        Thread.sleep(100);
+        waitAndAssert(1, 2);
 
-        message = prepareMessage(2, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 1000);
+        assertExecution(clientId1, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientId2,1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 1000);
         distributorInboundQueue.add(message);
 
-        message = prepareMessage(3, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 250);
+        waitAndAssert(1, 2);
+        assertExecution(clientId2, CcyPair.BTCUSD, 1, 1000, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientId3,1, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 250);
         distributorInboundQueue.add(message);
 
-        while ( executionPublishQueue.size() < 4){
-            System.out.println("Waiting for Execution to arrive...");
-            Thread.sleep(100);
-        }
-        assertEquals("Two Executions Expected",4, executionPublishQueue.size());
+        waitAndAssert(4, 2);
 
-        Execution execution = executionPublishQueue.poll();
-        assertExecution(execution, 3, CcyPair.BTCUSD, 1, 100, Side.Offer);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, 1, CcyPair.BTCUSD, 1, 100, Side.Bid);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, 3, CcyPair.BTCUSD, 1, 150, Side.Offer);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, 2, CcyPair.BTCUSD, 1, 150, Side.Bid);
+        assertExecution( clientId3, CcyPair.BTCUSD, 1, 100, Side.Offer, ExecutionType.PartialFill);
+        assertExecution( clientId1, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.Fill);
+        assertExecution( clientId3, CcyPair.BTCUSD, 1, 150, Side.Offer, ExecutionType.Fill);
+        assertExecution( clientId2, CcyPair.BTCUSD, 1, 150, Side.Bid, ExecutionType.PartialFill);
 
     }
 
@@ -149,32 +152,31 @@ public class OrderBookDistributorTest {
     public void testDoubleLimitPricesVsMarket() throws InterruptedException {
 
         //Test that a market order matches with the best price first even though it arrived last
+        int clientId1 = 1;
+        int clientId2 = 2;
+        int clientId3 = 3;
 
-        Message message = prepareMessage(1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 2, 100);
+        Message message = prepareMessage(clientId1,1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 2, 100);
         distributorInboundQueue.add(message);
 
-        Thread.sleep(100);
+        waitAndAssert(1, 2);
+        assertExecution(clientId1, CcyPair.BTCUSD, 2, 100, Side.Bid, ExecutionType.OrderAccepted);
 
-        message = prepareMessage(2, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 1000);
+        message = prepareMessage(clientId2,1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 1000);
         distributorInboundQueue.add(message);
 
-        message = prepareMessage(3, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 250);
+        waitAndAssert(1, 2);
+        assertExecution(clientId2, CcyPair.BTCUSD, 1, 1000, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientId3,1, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 250);
         distributorInboundQueue.add(message);
 
-        while ( executionPublishQueue.size() < 4){
-            System.out.println("Waiting for 4 Execution to arrive but only " + executionPublishQueue.size() + " so far...");
-            Thread.sleep(100);
-        }
-        assertEquals("Two Executions Expected",4, executionPublishQueue.size());
+        waitAndAssert(4, 2);
 
-        Execution execution = executionPublishQueue.poll();
-        assertExecution(execution, 3, CcyPair.BTCUSD, 2, 100, Side.Offer);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, 1, CcyPair.BTCUSD, 2, 100, Side.Bid);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, 3, CcyPair.BTCUSD, 1, 150, Side.Offer);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, 2, CcyPair.BTCUSD, 1, 150, Side.Bid);
+        assertExecution( clientId3, CcyPair.BTCUSD, 2, 100, Side.Offer, ExecutionType.PartialFill);
+        assertExecution( clientId1, CcyPair.BTCUSD, 2, 100, Side.Bid, ExecutionType.Fill);
+        assertExecution( clientId3, CcyPair.BTCUSD, 1, 150, Side.Offer, ExecutionType.Fill);
+        assertExecution( clientId2, CcyPair.BTCUSD, 1, 150, Side.Bid, ExecutionType.PartialFill);
 
     }
 
@@ -185,46 +187,82 @@ public class OrderBookDistributorTest {
         int client2LimitOrderId = 2;
         int marketOrderClientId = 3;
 
-        Message message = prepareMessage(client1LimitOrderId, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 1000);
+        Message message = prepareMessage(client1LimitOrderId,1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 1000);
         distributorInboundQueue.add(message);
 
-        Thread.sleep(100);
+        waitAndAssert(1, 2);
+        assertExecution(client1LimitOrderId, CcyPair.BTCUSD, 1, 1000, Side.Bid, ExecutionType.OrderAccepted);
 
-        message = prepareMessage(client2LimitOrderId, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 2, 100);
+        message = prepareMessage(client2LimitOrderId,1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 2, 100);
         distributorInboundQueue.add(message);
 
-        message = prepareMessage(marketOrderClientId, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 250);
+        waitAndAssert(1, 2);
+        assertExecution(client2LimitOrderId, CcyPair.BTCUSD, 2, 100, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(marketOrderClientId,1, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 250);
         distributorInboundQueue.add(message);
 
-        while ( executionPublishQueue.size() < 4){
-            System.out.println("Waiting for 4 Execution to arrive but only " + executionPublishQueue.size() + " so far...");
-            Thread.sleep(100);
-        }
-        assertEquals("Two Executions Expected",4, executionPublishQueue.size());
+        waitAndAssert(4, 2);
 
-        Execution execution = executionPublishQueue.poll();
-        assertExecution(execution, marketOrderClientId, CcyPair.BTCUSD, 2, 100, Side.Offer);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, client2LimitOrderId, CcyPair.BTCUSD, 2, 100, Side.Bid);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, marketOrderClientId, CcyPair.BTCUSD, 1, 150, Side.Offer);
-        execution = executionPublishQueue.poll();
-        assertExecution(execution, client1LimitOrderId, CcyPair.BTCUSD, 1, 150, Side.Bid);
+        assertExecution( marketOrderClientId, CcyPair.BTCUSD, 2, 100, Side.Offer, ExecutionType.PartialFill);
+        assertExecution( client2LimitOrderId, CcyPair.BTCUSD, 2, 100, Side.Bid, ExecutionType.Fill);
+        assertExecution( marketOrderClientId, CcyPair.BTCUSD, 1, 150, Side.Offer, ExecutionType.Fill);
+        assertExecution( client1LimitOrderId, CcyPair.BTCUSD, 1, 150, Side.Bid, ExecutionType.PartialFill);
 
     }
 
-    private void assertExecution(Execution execution, int clientId, CcyPair pair, long price, long quantity, Side side) {
+    private void waitAndAssert(int expectedMessages, int waitCount) throws InterruptedException {
+
+        Thread.sleep(50);
+        while ( executionPublishQueue.size() < expectedMessages && waitCount > 0){
+            System.out.println("Waiting for Execution to arrive...");
+            Thread.sleep(100);
+            waitCount -=1;
+        }
+        assertEquals("Two Executions Expected", expectedMessages, executionPublishQueue.size());
+
+    }
+
+    private void assertReject(int clientId,long orderId, long clientOrderId, long size) {
+        Execution execution = executionPublishQueue.poll();
+        assertEquals(clientId, execution.getClientId());
+        assertEquals(clientOrderId, execution.getClientOrderId());
+        assertEquals(size, execution.getQuantity());
+        assertEquals(ExecutionType.Reject, execution.getType());
+    }
+
+    private void assertCancel(int clientId,long orderId, long clientOrderId) {
+        Execution execution = executionPublishQueue.poll();
+        assertEquals(clientId, execution.getClientId());
+        assertEquals(orderId, execution.getOrderId());
+        assertEquals(clientOrderId, execution.getClientOrderId());
+        assertEquals(ExecutionType.CancelAccepted, execution.getType());
+    }
+
+    private long assertExecution(int clientId, CcyPair pair, long price, long quantity, Side side, ExecutionType type) {
+        Execution execution = executionPublishQueue.poll();
         assertEquals(clientId, execution.getClientId());
         assertEquals(pair, execution.getPair());
         assertEquals(price, execution.getPrice());
         assertEquals(quantity, execution.getQuantity());
-        assertEquals(side, execution.getSide() );
+        assertEquals(side, execution.getSide());
+        assertEquals(type, execution.getType());
+
+        return execution.getOrderId();
     }
 
-    private Message prepareMessage(long clientId, CcyPair pair, Side side, MessageType type, long price, long quantity){
+    private Message prepareCancel(long orderId){
+        Message message = new Message();
+        message.setOrderId(orderId);
+        message.setType(MessageType.CancelOrder);
+        return message;
+    }
+
+    private Message prepareMessage(long clientId, long clientOrderId, CcyPair pair, Side side, MessageType type, long price, long quantity){
         Message message = new Message();
 
         message.setClientId(clientId);
+        message.setClientOrderId(clientOrderId);
         message.setPair(pair);
         message.setSide(side);
         message.setType(type);
