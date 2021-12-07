@@ -48,7 +48,7 @@ public class MatchingEngineIntegrationTest {
 
 
     @Test
-    public void testSingleLimitVsMarket() throws InterruptedException {
+    public void testSingleLimitVsMarketBid() throws InterruptedException {
 
         //Base case, check a limit order and a market order can match
         int client1LimitOrderId = 1;
@@ -70,6 +70,32 @@ public class MatchingEngineIntegrationTest {
 
         assertExecution(client2LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Offer, ExecutionType.Fill);
         assertExecution(client1LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.Fill);
+
+    }
+
+    @Test
+    public void testSingleLimitVsMarketOffer() throws InterruptedException {
+
+        //Base case, check a limit order and a market order can match
+        int client1LimitOrderId = 1;
+        int client2LimitOrderId = 2;
+        int clientOrderId = 1;
+
+
+        Message message = prepareMessage(client1LimitOrderId, clientOrderId, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 1, 100);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        assertExecution(client1LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Offer, ExecutionType.OrderAccepted);
+
+
+        message = prepareMessage(client2LimitOrderId, clientOrderId, CcyPair.BTCUSD, Side.Bid, MessageType.NewMarketOrder, 1, 100);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(2, 2);
+
+        assertExecution(client2LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.Fill);
+        assertExecution(client1LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Offer, ExecutionType.Fill);
 
     }
 
@@ -123,7 +149,7 @@ public class MatchingEngineIntegrationTest {
     }
 
     @Test
-    public void testDoubleLimitVsBigMarket() throws InterruptedException {
+    public void testDoubleLimitVsBigMarketBid() throws InterruptedException {
 
         //Test that a market order can partially fill on multiple limit orders
         int clientId1 = 1;
@@ -152,6 +178,39 @@ public class MatchingEngineIntegrationTest {
         assertExecution( clientId1, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.Fill);
         assertExecution( clientId3, CcyPair.BTCUSD, 1, 150, Side.Offer, ExecutionType.Fill);
         assertExecution( clientId2, CcyPair.BTCUSD, 1, 150, Side.Bid, ExecutionType.PartialFill);
+
+    }
+
+    @Test
+    public void testDoubleLimitVsBigMarketOffer() throws InterruptedException {
+
+        //Test that a market order can partially fill on multiple limit orders
+        int clientId1 = 1;
+        int clientId2 = 2;
+        int clientId3 = 3;
+
+        Message message = prepareMessage(clientId1,1, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 1, 100);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+
+        assertExecution(clientId1, CcyPair.BTCUSD, 1, 100, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientId2,1, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 1, 1000);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        assertExecution(clientId2, CcyPair.BTCUSD, 1, 1000, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientId3,1, CcyPair.BTCUSD, Side.Bid, MessageType.NewMarketOrder, 1, 250);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(4, 2);
+
+        assertExecution( clientId3, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.PartialFill);
+        assertExecution( clientId1, CcyPair.BTCUSD, 1, 100, Side.Offer, ExecutionType.Fill);
+        assertExecution( clientId3, CcyPair.BTCUSD, 1, 150, Side.Bid, ExecutionType.Fill);
+        assertExecution( clientId2, CcyPair.BTCUSD, 1, 150, Side.Offer, ExecutionType.PartialFill);
 
     }
 
@@ -251,8 +310,7 @@ public class MatchingEngineIntegrationTest {
 
     @Test
     public void testMassCancel() throws InterruptedException {
-
-        //Base case, check a limit order can be cancelled
+        //Test that all orders for a client are cancelled on mass cancel
         int clientId1 = 1;
         int clientId2 = 2;
         int clientOrderId = 7;
@@ -309,8 +367,6 @@ public class MatchingEngineIntegrationTest {
         executionPublishQueue.poll();
         assertEquals(ExecutionType.CancelAccepted, cancelMsg.getType());
         assertEquals(clientId2, cancelMsg.getClientId());
-
-
     }
 
     private void waitAndAssert(int expectedMessages, int waitCount) throws InterruptedException {
@@ -372,9 +428,7 @@ public class MatchingEngineIntegrationTest {
         message.setQuantity(quantity);
 
         return message;
-
     }
-
 
     @After
     public void tearDown() throws Exception {
