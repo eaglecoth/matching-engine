@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.Assert.*;
 
-public class OrderBookDistributorTest {
+public class MatchingEngineIntegrationTest {
 
     private OrderBookDistributor orderBookDistributor;
     private OrderBookProcessor btcBidProcessor;

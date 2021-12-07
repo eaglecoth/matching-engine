@@ -94,4 +94,18 @@ public class Message {
         this.clientId = message.getClientId();
         this.clientOrderId = message.getClientOrderId();
     }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "type=" + type +
+                ", pair=" + pair +
+                ", side=" + side +
+                ", quantity=" + quantity +
+                ", price=" + price +
+                ", orderId=" + orderId +
+                ", clientId=" + clientId +
+                ", clientOrderId=" + clientOrderId +
+                '}';
+    }
 }

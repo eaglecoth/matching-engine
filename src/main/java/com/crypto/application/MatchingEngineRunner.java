@@ -18,7 +18,7 @@ import static com.crypto.data.Constants.*;
 
 
 /**
- * Main running class to test the matching engine
+ * Main running class to test the matching engine. Some sample orders being
  */
 public class MatchingEngineRunner {
 
@@ -69,15 +69,11 @@ public class MatchingEngineRunner {
             System.out.println("Something came back: " + executionPublishQueue.poll());
         }
 
-
-
         orderBookDistributor.shutdown();
         btcBidProcessor.shutdown();
         btcOfferProcessor.shutdown();
         ethBidProcessor.shutdown();
         ethOfferProcessor.shutdown();
-
-
 
     }
 

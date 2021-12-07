@@ -96,5 +96,18 @@ public class Order {
         this.clientOrderId = message.getClientOrderId();
     }
 
-
+    @Override
+    public String toString() {
+        return "Order{" +
+                "head=" + head +
+                ", tail=" + tail +
+                ", pair=" + pair +
+                ", side=" + side +
+                ", orderId=" + orderId +
+                ", size=" + size +
+                ", clientId=" + clientId +
+                ", limitLevel=" + limitLevel +
+                ", clientOrderId=" + clientOrderId +
+                '}';
+    }
 }
