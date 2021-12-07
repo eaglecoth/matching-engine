@@ -86,7 +86,7 @@ public class MatchingEngineIntegrationTest {
     @Test
     public void testSpreadCrossBlock() throws InterruptedException {
 
-        //Base case, check a limit order and a market order can match
+        //Check that it is not possible to insert a limit order which crosses the spread
         int client1LimitOrderId = 1;
         int client2LimitOrderId = 2;
         int clientOrderId = 1;
