@@ -48,9 +48,18 @@ public class MatchingEngineRunner {
         OrderBookProcessor ethBidProcessor = new BidOrderBookProcessor(CcyPair.ETHUSD, orderPool, executionPool, messagePool, queues.get(2), executionPublishQueue, orderIdCounter);
         OrderBookProcessor ethOfferProcessor = new OfferOrderBookProcessor(CcyPair.ETHUSD, orderPool, executionPool, messagePool, queues.get(3), executionPublishQueue, orderIdCounter);
 
+        btcOfferProcessor.setCorrespondingBook(btcBidProcessor);
+        btcBidProcessor.setCorrespondingBook(btcOfferProcessor);
+        ethOfferProcessor.setCorrespondingBook(ethBidProcessor);
+        ethBidProcessor.setCorrespondingBook(ethOfferProcessor);
+
+        btcOfferProcessor.startOrderBook();
+        btcBidProcessor.startOrderBook();
+        ethOfferProcessor.startOrderBook();
+        ethBidProcessor.startOrderBook();
 
 
-        String limitOrder = getLimitOrder("666", "123", "100",BID, BTCUSD);
+        String limitOrder = getLimitOrder("666", "123", "100", BID, BTCUSD, "10000");
 
 
         serializer.onMessage(limitOrder);
@@ -59,7 +68,7 @@ public class MatchingEngineRunner {
             System.out.println("Something came back: " + executionPublishQueue.poll());
         }
 
-        String marketOrder = getMarketOrder("667", "321", OFFER, BTCUSD);
+        String marketOrder = getMarketOrder("667", "321", OFFER, BTCUSD, "500");
 
         serializer.onMessage(marketOrder);
         Thread.sleep(200);
@@ -77,11 +86,11 @@ public class MatchingEngineRunner {
 
     }
 
-    private static String getLimitOrder(String clientId, String clientOrderId, String price, String side, String ccy ) {
-        return NEW_LIMIT_ORDER + MESSAGE_DELIMITER + clientId +MESSAGE_DELIMITER + clientOrderId + MESSAGE_DELIMITER + ccy + MESSAGE_DELIMITER + side + MESSAGE_DELIMITER + price;
+    private static String getLimitOrder(String clientId, String clientOrderId, String price, String side, String ccy , String quantity) {
+        return NEW_LIMIT_ORDER + MESSAGE_DELIMITER + clientId +MESSAGE_DELIMITER + clientOrderId + MESSAGE_DELIMITER + ccy + MESSAGE_DELIMITER + side + MESSAGE_DELIMITER + quantity + MESSAGE_DELIMITER + price;
     }
 
-    private static String getMarketOrder(String clientId, String clientOrderId, String side, String ccy  ) {
-        return NEW_MARKET_ORDER + MESSAGE_DELIMITER + clientId +MESSAGE_DELIMITER + clientOrderId + MESSAGE_DELIMITER + ccy + MESSAGE_DELIMITER + side + MESSAGE_DELIMITER;
+    private static String getMarketOrder(String clientId, String clientOrderId, String side, String ccy, String quantity  ) {
+        return NEW_MARKET_ORDER + MESSAGE_DELIMITER + clientId +MESSAGE_DELIMITER + clientOrderId + MESSAGE_DELIMITER + ccy + MESSAGE_DELIMITER + side + MESSAGE_DELIMITER + quantity;
     }
 }

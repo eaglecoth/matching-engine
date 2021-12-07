@@ -48,9 +48,6 @@ public class Message {
         this.price = price;
     }
 
-    public void setLimit(Long valueOf) {
-    }
-
     public long getOrderId() {
         return orderId;
     }

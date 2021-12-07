@@ -90,6 +90,7 @@ public class MessageSerializerImpl implements MessageSerializer {
                     return null;
                 }
                 message.setSide(side);
+                message.setQuantity(Long.valueOf(messageString[5]));
                 return message;
 
             case NEW_LIMIT_ORDER:
@@ -109,7 +110,8 @@ public class MessageSerializerImpl implements MessageSerializer {
                     return null;
                 }
                 message.setSide(side);
-                message.setLimit(Long.valueOf(messageString[5]));
+                message.setQuantity(Long.valueOf(messageString[5]));
+                message.setPrice(Long.valueOf(messageString[6]));
                 return message;
 
             case CANCEL_ORDER:

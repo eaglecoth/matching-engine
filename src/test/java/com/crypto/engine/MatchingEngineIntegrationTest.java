@@ -159,8 +159,6 @@ public class MatchingEngineIntegrationTest {
         waitAndAssert(1, 2);
         assertReject(clientId2,1, 250);
 
-
-
         //Repeat test to check that engine is not in inconsistent state
         message = prepareMessage(1,clientOrderId, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
         distributorInboundQueue.add(message);
