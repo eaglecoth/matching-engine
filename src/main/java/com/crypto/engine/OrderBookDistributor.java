@@ -1,7 +1,6 @@
 package com.crypto.engine;
 
 import com.crypto.data.Message;
-import com.crypto.data.MessageType;
 import com.crypto.data.Order;
 import com.crypto.feed.ObjectPool;
 
@@ -17,7 +16,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class OrderBookDistributor {
 
     private volatile boolean runningFlag = true;
-    private final ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap;
     private final ConcurrentLinkedQueue<Message> incomingMessageQueue;
     private final ConcurrentLinkedQueue<Message> btcUsdOfferBookQueue;
     private final ConcurrentLinkedQueue<Message> btcUsdBidBookQueue;
@@ -25,10 +23,9 @@ public class OrderBookDistributor {
     private final ConcurrentLinkedQueue<Message> ethUsdBidBookQueue;
     private final ObjectPool<Message> messagePool;
 
-    public OrderBookDistributor(ConcurrentLinkedQueue<Message> inboundQueue, List<ConcurrentLinkedQueue<Message>> engineQueues, ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap, ObjectPool<Message> messagePool) {
+    public OrderBookDistributor(ConcurrentLinkedQueue<Message> inboundQueue, List<ConcurrentLinkedQueue<Message>> engineQueues, ObjectPool<Message> messagePool) {
 
         this.messagePool = messagePool;
-        this.clientIdToOrderMap = clientIdToOrderMap;
 
         incomingMessageQueue = inboundQueue;
         btcUsdOfferBookQueue = engineQueues.get(0);

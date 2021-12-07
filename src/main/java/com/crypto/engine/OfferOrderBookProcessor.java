@@ -12,30 +12,6 @@ public class OfferOrderBookProcessor extends OrderBookProcessor{
         super(pair, orderObjectPool, executionObjectPool, messageObjectPool, distributorInboundQueue, executionPublishQueue, orderCounter);
     }
 
-    @Override
-    protected boolean priceCrossingSpread(long price) {
-        return price <= correspondingProcessor.getTopOfBookPrice();
-    }
-
-    @Override
-    protected Side getSide() {
-        return Side.Offer;
-    }
-
-    @Override
-    protected Side getOppositeSide() {
-        return Side.Bid;
-    }
-
-    @Override
-    protected long getTopOfBookPrice() {
-        return topOfBook == null ? Long.MAX_VALUE : topOfBook.getPrice();
-    }
-
-    @Override
-    protected LimitLevel getNextLevelLimit(LimitLevel limitLevelToExecute) {
-        return limitLevelToExecute.getNextHigher();
-    }
     /**
      * Limits are ordered in a sorted double linked list. When a new limit arrives, we traverse the list and insert
      * at the appropriate spot, starting at the top of book as we expect the action to mostly occur there.
@@ -76,5 +52,31 @@ public class OfferOrderBookProcessor extends OrderBookProcessor{
     @Override
     public void setCorrespondingBook(OrderBookProcessor bidProcessor) {
         this.correspondingProcessor = bidProcessor;
+    }
+
+
+    @Override
+    protected boolean priceCrossingSpread(long price) {
+        return price <= correspondingProcessor.getTopOfBookPrice();
+    }
+
+    @Override
+    protected Side getSide() {
+        return Side.Offer;
+    }
+
+    @Override
+    protected Side getOppositeSide() {
+        return Side.Bid;
+    }
+
+    @Override
+    protected long getTopOfBookPrice() {
+        return topOfBook == null ? Long.MAX_VALUE : topOfBook.getPrice();
+    }
+
+    @Override
+    protected LimitLevel getNextLevelLimit(LimitLevel limitLevelToExecute) {
+        return limitLevelToExecute.getNextHigher();
     }
 }

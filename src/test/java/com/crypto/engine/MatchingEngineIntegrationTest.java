@@ -8,7 +8,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.Assert.*;
@@ -30,7 +29,6 @@ public class MatchingEngineIntegrationTest {
         ObjectPool<Order> orderPool = new ObjectPool<>(Order::new);
         ObjectPool<Execution> executionPool = new ObjectPool<>(Execution::new);
 
-        ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap = new ConcurrentHashMap<>();
         distributorInboundQueue = new ConcurrentLinkedQueue<>();
         executionPublishQueue = new ConcurrentLinkedQueue<>();
 
@@ -39,7 +37,7 @@ public class MatchingEngineIntegrationTest {
             queues.add(new ConcurrentLinkedQueue<>());
         }
 
-        orderBookDistributor = new OrderBookDistributor(distributorInboundQueue, queues, clientIdToOrderMap, messagePool);
+        orderBookDistributor = new OrderBookDistributor(distributorInboundQueue, queues, messagePool);
         btcOfferProcessor = new OfferOrderBookProcessor(CcyPair.BTCUSD, orderPool, executionPool, messagePool, queues.get(0), executionPublishQueue, orderIdCounter);
         btcBidProcessor = new BidOrderBookProcessor(CcyPair.BTCUSD, orderPool, executionPool, messagePool, queues.get(1), executionPublishQueue, orderIdCounter);
         ethOfferProcessor = new OfferOrderBookProcessor(CcyPair.ETHUSD, orderPool, executionPool, messagePool, queues.get(2), executionPublishQueue, orderIdCounter);
@@ -409,7 +407,7 @@ public class MatchingEngineIntegrationTest {
             Thread.sleep(100);
             waitCount -=1;
         }
-        assertEquals("Two Executions Expected", expectedMessages, executionPublishQueue.size());
+        assertEquals(expectedMessages + " Executions Expected", expectedMessages, executionPublishQueue.size());
 
     }
 
@@ -463,7 +461,7 @@ public class MatchingEngineIntegrationTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         orderBookDistributor.shutdown();
         btcBidProcessor.shutdown();
         btcOfferProcessor.shutdown();
