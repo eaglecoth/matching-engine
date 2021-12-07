@@ -1,8 +1,6 @@
 package com.crypto.engine;
 
-import com.crypto.data.CcyPair;
-import com.crypto.data.Message;
-import com.crypto.data.Order;
+import com.crypto.data.*;
 import com.crypto.feed.ObjectPool;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,9 +9,19 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class OfferOrderBookProcessor extends OrderBookProcessor{
 
-    public OfferOrderBookProcessor(CcyPair pair, ObjectPool<Order> orderObjectPool, ObjectPool<Execution> executionObjectPool,  ObjectPool<Message> messageObjectPool,ConcurrentLinkedQueue<Message> distributorInboundQueue, ConcurrentLinkedQueue<Execution> executionPublishQueue, AtomicLong orderCounter, ConcurrentHashMap<Long, Order> idToOrderMap) {
-        super(pair, orderObjectPool, executionObjectPool, messageObjectPool, distributorInboundQueue, executionPublishQueue, orderCounter,idToOrderMap);
+    public OfferOrderBookProcessor(CcyPair pair, ObjectPool<Order> orderObjectPool, ObjectPool<Execution> executionObjectPool, ObjectPool<Message> messageObjectPool, ConcurrentLinkedQueue<Message> distributorInboundQueue, ConcurrentLinkedQueue<Execution> executionPublishQueue, AtomicLong orderCounter) {
+        super(pair, orderObjectPool, executionObjectPool, messageObjectPool, distributorInboundQueue, executionPublishQueue, orderCounter);
 
+    }
+
+    @Override
+    protected Side getSide() {
+        return Side.Offer;
+    }
+
+    @Override
+    protected Side getOppositeSide() {
+        return Side.Bid;
     }
 
     @Override

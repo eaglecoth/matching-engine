@@ -25,4 +25,7 @@ public class ObjectPool<T> {
     }
 
 
+    public long getSize(){
+        return messagePool.size();
+    }
 }

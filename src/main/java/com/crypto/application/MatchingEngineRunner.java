@@ -1,6 +1,7 @@
 package com.crypto.application;
 
 import com.crypto.data.CcyPair;
+import com.crypto.data.Execution;
 import com.crypto.data.Message;
 import com.crypto.data.Order;
 import com.crypto.engine.*;
@@ -12,6 +13,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.crypto.data.Constants.MESSAGE_DELIMITER;
+import static com.crypto.data.Constants.NEW_LIMIT_ORDER;
 
 
 /**
@@ -34,16 +38,20 @@ public class MatchingEngineRunner {
 
         ConcurrentLinkedQueue<Message> distributorInboundQueue = new ConcurrentLinkedQueue<>();
         ConcurrentLinkedQueue<Execution> executionPublishQueue = new ConcurrentLinkedQueue<>();
-        MessageSerializer serializer = new MessageSerializerImpl(distributorInboundQueue, messagePool, 3, 100, ";");
+        MessageSerializer serializer = new MessageSerializerImpl(distributorInboundQueue, messagePool, 3, 100, MESSAGE_DELIMITER);
 
         ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap = new ConcurrentHashMap<>();
         ConcurrentHashMap<Long, Order> idToOrderMap =  new ConcurrentHashMap<>();
 
-        MatchingEngineProcessor orderBookDistributor = new OrderBookDistributor(queues, clientIdToOrderMap, messagePool, idToOrderMap);
-        OrderBookProcessor btcBidProcessor = new BidOrderBookProcessor(CcyPair.BTCUSD, orderPool, executionPool, messagePool, distributorInboundQueue, executionPublishQueue, orderIdCounter, idToOrderMap);
-        OrderBookProcessor btcOfferProcessor = new OfferOrderBookProcessor(CcyPair.BTCUSD, orderPool, executionPool, messagePool, distributorInboundQueue, executionPublishQueue, orderIdCounter, idToOrderMap);
-        OrderBookProcessor ethBidProcessor = new BidOrderBookProcessor(CcyPair.ETHUSD, orderPool, executionPool, messagePool, distributorInboundQueue, executionPublishQueue, orderIdCounter, idToOrderMap);
-        OrderBookProcessor ethOfferProcessor = new OfferOrderBookProcessor(CcyPair.ETHUSD, orderPool, executionPool, messagePool, distributorInboundQueue, executionPublishQueue, orderIdCounter, idToOrderMap);
+        OrderBookDistributor orderBookDistributor = new OrderBookDistributor(distributorInboundQueue, queues, clientIdToOrderMap, messagePool, idToOrderMap);
+
+        OrderBookProcessor btcBidProcessor = new BidOrderBookProcessor(CcyPair.BTCUSD, orderPool, executionPool, messagePool, distributorInboundQueue, executionPublishQueue, orderIdCounter);
+        OrderBookProcessor btcOfferProcessor = new OfferOrderBookProcessor(CcyPair.BTCUSD, orderPool, executionPool, messagePool, distributorInboundQueue, executionPublishQueue, orderIdCounter);
+        OrderBookProcessor ethBidProcessor = new BidOrderBookProcessor(CcyPair.ETHUSD, orderPool, executionPool, messagePool, distributorInboundQueue, executionPublishQueue, orderIdCounter);
+        OrderBookProcessor ethOfferProcessor = new OfferOrderBookProcessor(CcyPair.ETHUSD, orderPool, executionPool, messagePool, distributorInboundQueue, executionPublishQueue, orderIdCounter);
+
+
+        serializer.onMessage(NEW_LIMIT_ORDER);
 
 
     }

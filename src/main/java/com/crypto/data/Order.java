@@ -47,6 +47,10 @@ public class Order {
         this.limitLevel = limitLevel;
     }
 
+    public long getOrderId() {
+        return orderId;
+    }
+
     public boolean cancelOrder(){
         if(head != null && tail != null){
             tail.setHead(head);

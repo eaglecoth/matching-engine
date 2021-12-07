@@ -10,4 +10,5 @@ public class Constants {
     public static final String BTCUSD = "BTCUSD";
     public static final String BID = "BID";
     public static final String OFFER = "OFFER";
+    public static final String MESSAGE_DELIMITER = ";";
 }

@@ -1,41 +1,40 @@
 package com.crypto.engine;
 
-import com.crypto.data.CcyPair;
 import com.crypto.data.Message;
 import com.crypto.data.MessageType;
 import com.crypto.data.Order;
 import com.crypto.feed.ObjectPool;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class OrderBookDistributor implements MatchingEngineProcessor {
+/**
+ * Class responsible for unpacking instructions and sending them for processing to the correct threads.
+ * One thread running for each Currency pairs side of book.
+ * Non blocking thread communication is provided via ConcurrentLinkedQueues.
+ */
+public class OrderBookDistributor {
 
     private volatile boolean runningFlag = true;
-    private Map<Long, LimitLevel> priceLimitIndex;
-    private ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap;
-    private ConcurrentHashMap<Long, Order> idToOrderMap;
-    ConcurrentLinkedQueue<Message> incomingMessageQueue;
-    ConcurrentLinkedQueue<Message> btcUsdOfferBookQueue;
-    ConcurrentLinkedQueue<Message> btcUsdBidBookQueue;
-    ConcurrentLinkedQueue<Message> ethUsdOfferBookQueue;
-    ConcurrentLinkedQueue<Message> ethUsdBidBookQueue;
-    ObjectPool<Message> messagePool;
-    AtomicLong orderCounter;
+    private final ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap;
+    private final ConcurrentLinkedQueue<Message> incomingMessageQueue;
+    private final ConcurrentLinkedQueue<Message> btcUsdOfferBookQueue;
+    private final ConcurrentLinkedQueue<Message> btcUsdBidBookQueue;
+    private final ConcurrentLinkedQueue<Message> ethUsdOfferBookQueue;
+    private final ConcurrentLinkedQueue<Message> ethUsdBidBookQueue;
+    private final ObjectPool<Message> messagePool;
 
-    public OrderBookDistributor(List<ConcurrentLinkedQueue<Message>> engineMessageQueue, ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap, ObjectPool<Message> messagePool, ConcurrentHashMap<Long, Order> idToOrderMap) {
+    public OrderBookDistributor(ConcurrentLinkedQueue<Message> inboundQueue, List<ConcurrentLinkedQueue<Message>> engineQueues, ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap, ObjectPool<Message> messagePool) {
 
-        orderCounter = new AtomicLong(0);
         this.messagePool = messagePool;
         this.clientIdToOrderMap = clientIdToOrderMap;
 
-        incomingMessageQueue = engineMessageQueue.get(0);
-        btcUsdOfferBookQueue = engineMessageQueue.get(1);
-        btcUsdBidBookQueue = engineMessageQueue.get(2);
-        ethUsdOfferBookQueue = engineMessageQueue.get(3);
-        ethUsdBidBookQueue = engineMessageQueue.get(4);
+        incomingMessageQueue = inboundQueue;
+        btcUsdOfferBookQueue = engineQueues.get(0);
+        btcUsdBidBookQueue = engineQueues.get(1);
+        ethUsdOfferBookQueue = engineQueues.get(2);
+        ethUsdBidBookQueue = engineQueues.get(3);
 
         Thread thread = new Thread(() -> {
             System.out.println("Order Book Distributor Running");
@@ -51,17 +50,20 @@ public class OrderBookDistributor implements MatchingEngineProcessor {
         thread.start();
     }
 
+    /**
+     * Helper method to decide which queue to send a particular request to.
+     * @param message
+     */
     private void processMessage(Message message) {
 
         switch (message.getType()) {
 
             case NewMarketOrder:
-            case NewLimitOrder:
                 switch (message.getSide()) {
                     case Bid:
                         switch (message.getPair()) {
                             case ETHUSD:
-                                ethUsdBidBookQueue.add(message);
+                                ethUsdOfferBookQueue.add(message);
                                 return;
                             case BTCUSD:
                                 btcUsdOfferBookQueue.add(message);
@@ -71,7 +73,7 @@ public class OrderBookDistributor implements MatchingEngineProcessor {
                     case Offer:
                         switch (message.getPair()) {
                             case ETHUSD:
-                                ethUsdOfferBookQueue.add(message);
+                                ethUsdBidBookQueue.add(message);
                                 return;
                             case BTCUSD:
                                 btcUsdBidBookQueue.add(message);
@@ -79,33 +81,51 @@ public class OrderBookDistributor implements MatchingEngineProcessor {
                         }
 
                     default:
+                        System.out.println("Unexpected Message Type which is not handled: " + message.getType());
+                        messagePool.returnObject(message);
+                        return;
+                }
+
+            case NewLimitOrder:
+                switch (message.getSide()) {
+                    case Bid:
+                        switch (message.getPair()) {
+                            case ETHUSD:
+                                ethUsdBidBookQueue.add(message);
+                                return;
+                            case BTCUSD:
+                                btcUsdBidBookQueue.add(message);
+                                return;
+                        }
+
+                    case Offer:
+                        switch (message.getPair()) {
+                            case ETHUSD:
+                                ethUsdOfferBookQueue.add(message);
+                                return;
+                            case BTCUSD:
+                                btcUsdOfferBookQueue.add(message);
+                                return;
+                        }
+
+                    default:
+                        System.out.println("Unexpected Message Type which is not handled: " + message.getType());
                         messagePool.returnObject(message);
                         return;
                 }
 
             case CancelOrder:
-                Order orderToCancel = idToOrderMap.get(message.getOrderId());
-                Message cancelMessage = messagePool.acquireObject();
-                cancelMessage.setType(MessageType.CancelOrder);
-                cancelMessage.setOrderId(orderToCancel.getClientId());
-                orderToCancel.getLimit().getProcessor().getDistributorInboundQueue().add(cancelMessage);
-                break;
-
             case CancelAllOrders:
-                clientIdToOrderMap.get(message.getClientId()).forEach(o -> {
-                    Message newMessage = messagePool.acquireObject();
-                    newMessage.setType(MessageType.CancelOrder);
-                    newMessage.setOrderId(o.getClientId());
-                    o.getLimit().getProcessor().getDistributorInboundQueue().add(newMessage);
-                });
-
-
+                btcUsdBidBookQueue.add(message);
+                btcUsdOfferBookQueue.add(message);
+                ethUsdBidBookQueue.add(message);
+                ethUsdOfferBookQueue.add(message);
+                break;
         }
-
     }
 
-    @Override
-    public int newMarketOrder(CcyPair pair, long price) {
-        return 0;
+    public void shutdown() {
+        System.out.println("Shuttingdown OrderBook Distributor");
+        runningFlag = false;
     }
 }
