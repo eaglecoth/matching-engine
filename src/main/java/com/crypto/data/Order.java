@@ -2,6 +2,10 @@ package com.crypto.data;
 
 import com.crypto.engine.LimitLevel;
 
+/**
+ * Internal representation of an order in a order book.  The order has knowledge of the order infront and behind
+ * in the queue on the particular limit, this allows for O(1) removal and matching should such occur.
+ */
 public class Order {
     private Order head;
     private Order tail;

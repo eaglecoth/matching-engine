@@ -9,6 +9,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static com.crypto.data.Constants.*;
 
+
+/**
+ * Not sure if this was really necessary.  The engine needs some serializer mechanism. This one is stupid.
+ */
 public class MessageSerializerImpl implements MessageSerializer {
 
     private final ConcurrentLinkedQueue<Message> engineMessageQueue;

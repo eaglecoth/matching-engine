@@ -2,7 +2,7 @@ package com.crypto.data;
 
 
 /**
- * Representing an instruction type message from Clients to the matching engine
+ * Representing an instruction type message from clients to the matching engine for processing
  */
 public class Message {
 

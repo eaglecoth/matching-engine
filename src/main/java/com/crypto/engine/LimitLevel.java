@@ -4,6 +4,10 @@ import com.crypto.data.Execution;
 import com.crypto.data.Order;
 import com.crypto.feed.ObjectPool;
 
+/**
+ * Representation of one price level for a particular side of an order book.  The limit level holds a double
+ * linked list of orders in order to allow O(1) matching of orders and cancelation of orders.
+ */
 public class LimitLevel {
 
     private OrderBookProcessor processor;

@@ -278,6 +278,8 @@ public abstract class OrderBookProcessor {
         execution.setOrderId(order.getOrderId());
         execution.setClientOrderId(order.getClientOrderId());
         execution.setClientId(order.getClientId());
+        execution.setCcyPair(order.getLimit().getProcessor().getPair());
+        execution.setPrice(order.getLimit().getPrice());
         executionPublishQueue.add(execution);
         orderObjectPool.returnObject(order);
     }

@@ -1,7 +1,8 @@
 package com.crypto.data;
 
-import com.crypto.data.CcyPair;
-import com.crypto.data.Side;
+/**
+ * POJO representation of a response / execution message from the matching engine
+ */
 
 public class Execution {
     private volatile ExecutionType type;

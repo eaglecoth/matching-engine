@@ -188,7 +188,7 @@ public class OrderBookDistributorTest {
     }
 
     @Test
-    public void testDoubleLimitPricesLiftVsMarket() throws InterruptedException {
+    public void testDoubleLimitPricesLiftVsMarketBid() throws InterruptedException {
 
         int client1LimitOrderId = 1;
         int client2LimitOrderId = 2;
@@ -215,6 +215,101 @@ public class OrderBookDistributorTest {
         assertExecution( client2LimitOrderId, CcyPair.BTCUSD, 2, 100, Side.Bid, ExecutionType.Fill);
         assertExecution( marketOrderClientId, CcyPair.BTCUSD, 1, 150, Side.Offer, ExecutionType.Fill);
         assertExecution( client1LimitOrderId, CcyPair.BTCUSD, 1, 150, Side.Bid, ExecutionType.PartialFill);
+
+    }
+
+    @Test
+    public void testDoubleLimitPricesLiftVsMarketOffer() throws InterruptedException {
+
+        int client1LimitOrderId = 1;
+        int client2LimitOrderId = 2;
+        int marketOrderClientId = 3;
+
+        Message message = prepareMessage(client1LimitOrderId,1, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 2, 1000);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        assertExecution(client1LimitOrderId, CcyPair.BTCUSD, 2, 1000, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(client2LimitOrderId,1, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 1, 100);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        assertExecution(client2LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(marketOrderClientId,1, CcyPair.BTCUSD, Side.Bid, MessageType.NewMarketOrder, 1, 250);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(4, 2);
+
+        assertExecution( marketOrderClientId, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.PartialFill);
+        assertExecution( client2LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Offer, ExecutionType.Fill);
+        assertExecution( marketOrderClientId, CcyPair.BTCUSD, 2, 150, Side.Bid, ExecutionType.Fill);
+        assertExecution( client1LimitOrderId, CcyPair.BTCUSD, 2, 150, Side.Offer, ExecutionType.PartialFill);
+
+    }
+
+    @Test
+    public void testMassCancel() throws InterruptedException {
+
+        //Base case, check a limit order can be cancelled
+        int clientId1 = 1;
+        int clientId2 = 2;
+        int clientOrderId = 7;
+        long clientOrderId2 = 2;
+        long orderId1 = 0;
+        long orderId2 = 0;
+        long orderId3 = 0;
+        long orderId4 = 0;
+        long orderId5 = 0;
+        Message message = prepareMessage(clientId1,clientOrderId, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        orderId1 = assertExecution(clientId1, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientId2,2, CcyPair.ETHUSD, Side.Offer, MessageType.NewLimitOrder, 3, 250);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        orderId2 = assertExecution(clientId2, CcyPair.ETHUSD, 3, 250, Side.Offer, ExecutionType.OrderAccepted);
+
+
+        message = prepareMessage(clientId2,clientOrderId, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        orderId3 = assertExecution(clientId2, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientId1,clientOrderId2, CcyPair.ETHUSD, Side.Offer, MessageType.NewLimitOrder, 3, 250);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        orderId4 = assertExecution(clientId1, CcyPair.ETHUSD, 3, 250, Side.Offer, ExecutionType.OrderAccepted);
+
+
+        message = prepareMessage(clientId1,0, null, null, MessageType.CancelAllOrders, 0, 0);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(2, 2);
+        Execution cancelMsg = executionPublishQueue.poll();
+        assertEquals(ExecutionType.CancelAccepted, cancelMsg.getType());
+        assertEquals(clientId1, cancelMsg.getClientId());
+        executionPublishQueue.poll();
+        assertEquals(ExecutionType.CancelAccepted, cancelMsg.getType());
+        assertEquals(clientId1, cancelMsg.getClientId());
+
+        message = prepareMessage(clientId2,0, null, null, MessageType.CancelAllOrders, 0, 0);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(2, 2);
+        cancelMsg = executionPublishQueue.poll();
+        assertEquals(ExecutionType.CancelAccepted, cancelMsg.getType());
+        assertEquals(clientId2, cancelMsg.getClientId());
+        executionPublishQueue.poll();
+        assertEquals(ExecutionType.CancelAccepted, cancelMsg.getType());
+        assertEquals(clientId2, cancelMsg.getClientId());
+
 
     }
 
