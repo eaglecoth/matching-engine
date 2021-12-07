@@ -84,6 +84,30 @@ public class MatchingEngineIntegrationTest {
     }
 
     @Test
+    public void testSpreadCrossBlock() throws InterruptedException {
+
+        //Base case, check a limit order and a market order can match
+        int client1LimitOrderId = 1;
+        int client2LimitOrderId = 2;
+        int clientOrderId = 1;
+
+
+        Message message = prepareMessage(client1LimitOrderId, clientOrderId, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        assertExecution(client1LimitOrderId, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.OrderAccepted);
+
+
+        message = prepareMessage(client2LimitOrderId, clientOrderId, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 1, 100);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        assertReject(client2LimitOrderId, clientOrderId, 100);
+
+    }
+
+    @Test
     public void testSingleLimitVsMarketOffer() throws InterruptedException {
 
         //Base case, check a limit order and a market order can match
@@ -133,7 +157,7 @@ public class MatchingEngineIntegrationTest {
         distributorInboundQueue.add(message);
 
         waitAndAssert(1, 2);
-        assertReject(clientId2,orderId, 1, 250);
+        assertReject(clientId2,1, 250);
 
 
 
@@ -155,7 +179,7 @@ public class MatchingEngineIntegrationTest {
         distributorInboundQueue.add(message);
 
         waitAndAssert(1, 2);
-        assertReject(clientId2,orderId, 1, 250);
+        assertReject(clientId2,orderId,  250);
     }
 
     @Test
@@ -391,7 +415,7 @@ public class MatchingEngineIntegrationTest {
 
     }
 
-    private void assertReject(int clientId,long orderId, long clientOrderId, long size) {
+    private void assertReject(int clientId, long clientOrderId, long size) {
         Execution execution = executionPublishQueue.poll();
         assertEquals(clientId, execution.getClientId());
         assertEquals(clientOrderId, execution.getClientOrderId());
