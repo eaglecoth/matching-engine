@@ -4,14 +4,14 @@ import com.crypto.data.CcyPair;
 import com.crypto.data.Side;
 
 public class Execution {
-    private ExecutionType type;
-    private long clientId;
-    private long quantity;
-    private long price;
-    private CcyPair pair;
-    private Side side;
-    private long orderId;
-    private long clientOrderId;
+    private volatile ExecutionType type;
+    private volatile long clientId;
+    private volatile long quantity;
+    private volatile long price;
+    private volatile CcyPair pair;
+    private volatile Side side;
+    private volatile long orderId;
+    private volatile long clientOrderId;
 
     public void setClientId(long clientId) {
         this.clientId = clientId;
@@ -81,5 +81,19 @@ public class Execution {
 
     public void setClientOrderId(long clientOrderId) {
         this.clientOrderId = clientOrderId;
+    }
+
+    @Override
+    public String toString() {
+        return "Execution{" +
+                "type=" + type +
+                ", clientId=" + clientId +
+                ", quantity=" + quantity +
+                ", price=" + price +
+                ", pair=" + pair +
+                ", side=" + side +
+                ", orderId=" + orderId +
+                ", clientOrderId=" + clientOrderId +
+                '}';
     }
 }

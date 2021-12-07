@@ -72,50 +72,52 @@ public class MessageSerializerImpl implements MessageSerializer {
             case NEW_MARKET_ORDER:
                 message.setType(MessageType.NewMarketOrder);
                 message.setClientId(Long.valueOf(messageString[1]));
-                CcyPair pair = parseCcyPair(messageString[2]);
+                message.setClientOrderId(Long.valueOf(messageString[2]));
+                CcyPair pair = parseCcyPair(messageString[3]);
                 if(pair == null){
                     messageObjectPool.returnObject(message);
                     return null;
                 }
                 message.setPair(pair);
 
-                Side side = parseSide(messageString[3]);
+                Side side = parseSide(messageString[4]);
                 if(side == null){
                     messageObjectPool.returnObject(message);
                     return null;
                 }
                 message.setSide(side);
-                break;
+                return message;
 
             case NEW_LIMIT_ORDER:
                 message.setType(MessageType.NewLimitOrder);
                 message.setClientId(Long.valueOf(messageString[1]));
-                pair = parseCcyPair(messageString[2]);
+                message.setClientOrderId(Long.valueOf(messageString[2]));
+                pair = parseCcyPair(messageString[3]);
                 if(pair == null){
                     messageObjectPool.returnObject(message);
                     return null;
                 }
                 message.setPair(pair);
 
-                side = parseSide(messageString[3]);
+                side = parseSide(messageString[4]);
                 if(side == null){
                     messageObjectPool.returnObject(message);
                     return null;
                 }
                 message.setSide(side);
-                message.setLimit(Long.valueOf(messageString[4]));
-                break;
+                message.setLimit(Long.valueOf(messageString[5]));
+                return message;
 
             case CANCEL_ORDER:
                 message.setType(MessageType.CancelOrder);
                 message.setClientId(Long.valueOf(messageString[1]));
                 message.setOrderId(Long.valueOf(messageString[2]));
-                break;
+                return message;
 
             case CANCEL_ALL:
                 message.setType(MessageType.CancelAllOrders);
                 message.setClientId(Long.valueOf(messageString[1]));
-                break;
+                return message;
 
             default:
                 System.out.println("What happened here?  I don't handle messages of type " + messageString[0]);

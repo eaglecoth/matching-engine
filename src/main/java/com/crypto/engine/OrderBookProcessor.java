@@ -140,8 +140,8 @@ public abstract class OrderBookProcessor {
         //Full fill on matching order direct -- The market order is smaller than the first order top of book
         if (insideBookOrder.getSize() > fillSize) {
             insideBookOrder.setSize(insideBookOrder.getSize() - fillSize);
-            publishFill(message.getClientId(), fillSize, topOfBook, message.getPair(), getOppositeSide(), ExecutionType.Fill);
-            publishFill(insideBookOrder.getClientId(), fillSize, topOfBook, message.getPair(), getSide(), ExecutionType.PartialFill);
+            publishFill(message.getClientId(), fillSize, topOfBook, message.getPair(), getOppositeSide(), ExecutionType.Fill, message.getClientOrderId());
+            publishFill(insideBookOrder.getClientId(), fillSize, topOfBook, message.getPair(), getSide(), ExecutionType.PartialFill, insideBookOrder.getClientOrderId());
             message.setQuantity(0);
         } else {
 
@@ -149,8 +149,8 @@ public abstract class OrderBookProcessor {
 
             long insideBookOrderSize = insideBookOrder.getSize();
             boolean marketGreaterThanLimitOrder = fillSize != insideBookOrderSize;
-            publishFill(message.getClientId(), insideBookOrderSize, topOfBook, message.getPair(), getOppositeSide(), marketGreaterThanLimitOrder ? ExecutionType.PartialFill: ExecutionType.Fill );
-            publishFill(insideBookOrder.getClientId(), insideBookOrderSize, topOfBook, message.getPair(), getSide(), ExecutionType.Fill);
+            publishFill(message.getClientId(), insideBookOrderSize, topOfBook, message.getPair(), getOppositeSide(), marketGreaterThanLimitOrder ? ExecutionType.PartialFill: ExecutionType.Fill, message.getClientOrderId());
+            publishFill(insideBookOrder.getClientId(), insideBookOrderSize, topOfBook, message.getPair(), getSide(), ExecutionType.Fill, insideBookOrder.getClientOrderId());
 
             message.setQuantity(fillSize - insideBookOrderSize);
 
@@ -256,9 +256,10 @@ public abstract class OrderBookProcessor {
      * @param pair which currency pair
      * @param side which side
      */
-    private void publishFill(long clientId, Long size, LimitLevel limitLevel, CcyPair pair, Side side, ExecutionType execType) {
+    private void publishFill(long clientId, Long size, LimitLevel limitLevel, CcyPair pair, Side side, ExecutionType execType, long clientOrderId) {
         Execution execution = executionObjectPool.acquireObject();
         execution.setClientId(clientId);
+        execution.setClientOrderId(clientOrderId);
         execution.setQuantity(size);
         execution.setCcyPair(pair);
         execution.setPrice(limitLevel.getPrice());

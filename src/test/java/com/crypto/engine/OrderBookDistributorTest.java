@@ -1,8 +1,6 @@
 package com.crypto.engine;
 
 import com.crypto.data.*;
-import com.crypto.feed.MessageSerializer;
-import com.crypto.feed.MessageSerializerImpl;
 import com.crypto.feed.ObjectPool;
 import org.junit.After;
 import org.junit.Before;
@@ -13,8 +11,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static com.crypto.data.Constants.MESSAGE_DELIMITER;
 import static org.junit.Assert.*;
 
 public class OrderBookDistributorTest {
@@ -26,24 +22,15 @@ public class OrderBookDistributorTest {
     private OrderBookProcessor ethOfferProcessor;
     private ConcurrentLinkedQueue<Message> distributorInboundQueue;
     private ConcurrentLinkedQueue<Execution> executionPublishQueue;
-    private ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap;
-    private ConcurrentHashMap<Long, Order> idToOrderMap;
-    private MessageSerializer serializer;
-    private AtomicLong orderIdCounter;
-    ObjectPool<Message> messagePool;
-    ObjectPool<Order> orderPool;
-    ObjectPool<Execution> executionPool;
 
     @Before
     public void setup(){
-        orderIdCounter = new AtomicLong(0);
-        messagePool = new ObjectPool<>(Message::new);
-        orderPool = new ObjectPool<>(Order::new);
-        executionPool = new ObjectPool<>(Execution::new);
+        AtomicLong orderIdCounter = new AtomicLong(0);
+        ObjectPool<Message> messagePool = new ObjectPool<>(Message::new);
+        ObjectPool<Order> orderPool = new ObjectPool<>(Order::new);
+        ObjectPool<Execution> executionPool = new ObjectPool<>(Execution::new);
 
-        serializer = new MessageSerializerImpl(distributorInboundQueue, messagePool, 3, 100, MESSAGE_DELIMITER);
-        clientIdToOrderMap = new ConcurrentHashMap<>();
-        idToOrderMap =  new ConcurrentHashMap<>();
+        ConcurrentHashMap<Long, List<Order>> clientIdToOrderMap = new ConcurrentHashMap<>();
         distributorInboundQueue = new ConcurrentLinkedQueue<>();
         executionPublishQueue = new ConcurrentLinkedQueue<>();
 
@@ -113,6 +100,26 @@ public class OrderBookDistributorTest {
         assertReject(clientId2,orderId, 1, 250);
 
 
+
+        //Repeat test to check that engine is not in inconsistent state
+        message = prepareMessage(1,clientOrderId, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 1, 100);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        orderId = assertExecution(clientId1, CcyPair.BTCUSD, 1, 100, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareCancel(orderId);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertCancel(clientId1,orderId, clientOrderId);
+
+
+        //Check that a market order gets rejected for its full amount
+        message = prepareMessage(clientId2,1, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 1, 250);
+        distributorInboundQueue.add(message);
+
+        waitAndAssert(1, 2);
+        assertReject(clientId2,orderId, 1, 250);
     }
 
     @Test

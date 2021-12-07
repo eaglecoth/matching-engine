@@ -6,14 +6,14 @@ package com.crypto.data;
  */
 public class Message {
 
-    private MessageType type;
-    private CcyPair pair;
-    private Side side;
-    private long quantity;
-    private long price;
-    private long orderId;
-    private long clientId;
-    private long clientOrderId;
+    private volatile MessageType type;
+    private volatile CcyPair pair;
+    private volatile Side side;
+    private volatile long quantity;
+    private volatile long price;
+    private volatile long orderId;
+    private volatile long clientId;
+    private volatile long clientOrderId;
 
 
     public MessageType getType() {
