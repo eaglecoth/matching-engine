@@ -44,6 +44,16 @@ public class MatchingEngineIntegrationTest {
         btcBidProcessor = new BidOrderBookProcessor(CcyPair.BTCUSD, orderPool, executionPool, messagePool, queues.get(1), executionPublishQueue, orderIdCounter);
         ethOfferProcessor = new OfferOrderBookProcessor(CcyPair.ETHUSD, orderPool, executionPool, messagePool, queues.get(2), executionPublishQueue, orderIdCounter);
         ethBidProcessor = new BidOrderBookProcessor(CcyPair.ETHUSD, orderPool, executionPool, messagePool, queues.get(3), executionPublishQueue, orderIdCounter);
+
+        btcOfferProcessor.setCorrespondingBook(btcBidProcessor);
+        btcBidProcessor.setCorrespondingBook(btcOfferProcessor);
+        ethOfferProcessor.setCorrespondingBook(ethBidProcessor);
+        ethBidProcessor.setCorrespondingBook(ethOfferProcessor);
+
+        btcOfferProcessor.startOrderBook();
+        btcBidProcessor.startOrderBook();
+        ethOfferProcessor.startOrderBook();
+        ethBidProcessor.startOrderBook();
     }
 
 

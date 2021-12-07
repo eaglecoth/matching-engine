@@ -10,7 +10,11 @@ public class OfferOrderBookProcessor extends OrderBookProcessor{
 
     public OfferOrderBookProcessor(CcyPair pair, ObjectPool<Order> orderObjectPool, ObjectPool<Execution> executionObjectPool, ObjectPool<Message> messageObjectPool, ConcurrentLinkedQueue<Message> distributorInboundQueue, ConcurrentLinkedQueue<Execution> executionPublishQueue, AtomicLong orderCounter) {
         super(pair, orderObjectPool, executionObjectPool, messageObjectPool, distributorInboundQueue, executionPublishQueue, orderCounter);
+    }
 
+    @Override
+    protected boolean priceCrossingSpread(long price) {
+        return price <= correspondingProcessor.getTopOfBookPrice();
     }
 
     @Override
@@ -21,6 +25,11 @@ public class OfferOrderBookProcessor extends OrderBookProcessor{
     @Override
     protected Side getOppositeSide() {
         return Side.Bid;
+    }
+
+    @Override
+    protected long getTopOfBookPrice() {
+        return topOfBook == null ? Long.MAX_VALUE : topOfBook.getPrice();
     }
 
     @Override
@@ -62,5 +71,10 @@ public class OfferOrderBookProcessor extends OrderBookProcessor{
         if(newLimitLevel.getPrice() < topOfBook.getPrice()){
             topOfBook = newLimitLevel;
         }
+    }
+
+    @Override
+    public void setCorrespondingBook(OrderBookProcessor bidProcessor) {
+        this.correspondingProcessor = bidProcessor;
     }
 }

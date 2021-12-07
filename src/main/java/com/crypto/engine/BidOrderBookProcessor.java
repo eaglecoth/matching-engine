@@ -17,6 +17,11 @@ public class BidOrderBookProcessor extends OrderBookProcessor{
     }
 
     @Override
+    protected boolean priceCrossingSpread(long price) {
+        return price >= correspondingProcessor.getTopOfBookPrice();
+    }
+
+    @Override
     protected Side getSide() {
         return Side.Bid;
     }
@@ -24,6 +29,11 @@ public class BidOrderBookProcessor extends OrderBookProcessor{
     @Override
     protected Side getOppositeSide() {
         return Side.Offer;
+    }
+
+    @Override
+    protected long getTopOfBookPrice() {
+        return topOfBook == null ? 0 : topOfBook.getPrice();
     }
 
     @Override
@@ -66,6 +76,8 @@ public class BidOrderBookProcessor extends OrderBookProcessor{
             topOfBook = newLimitLevel;
         }
     }
+
+
 
 
 }

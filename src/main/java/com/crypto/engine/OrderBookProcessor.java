@@ -14,10 +14,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * size of the book.
  */
 public abstract class OrderBookProcessor {
+    private Thread engineThread;
     private final CcyPair pair;
     private final HashMap<Long, HashSet<Order>> clientToOrdersMap;
     protected ConcurrentLinkedQueue<Message> distributorInboundQueue;
-    protected volatile boolean runningFlag = true;
+    protected volatile boolean runningFlag;
     protected final TreeMap<Long, LimitLevel> orderBook = new TreeMap<>();
     protected final AtomicLong orderCounter;
     protected final ObjectPool<Order> orderObjectPool;
@@ -29,6 +30,7 @@ public abstract class OrderBookProcessor {
     protected final ConcurrentLinkedQueue<Execution> executionPublishQueue;
     protected final ObjectPool<Execution> executionObjectPool;
     protected final HashMap<Long, Order> idToOrderMap;
+    protected volatile OrderBookProcessor correspondingProcessor;
 
     public OrderBookProcessor(CcyPair pair, ObjectPool<Order> orderObjectPool, ObjectPool<Execution> executionObjectPool, ObjectPool<Message> messageObjectPool, ConcurrentLinkedQueue<Message> distributorInboundQueue, ConcurrentLinkedQueue<Execution> executionPublishQueue, AtomicLong orderCounter) {
         this.orderObjectPool = orderObjectPool;
@@ -43,7 +45,7 @@ public abstract class OrderBookProcessor {
         this.pair = pair;
         this.limitObjectPool = new ObjectPool<LimitLevel>(LimitLevel::new);
 
-        launchOrderBookProcessor(distributorInboundQueue);
+        configureOrderBookThread(distributorInboundQueue);
     }
 
     /**
@@ -100,7 +102,11 @@ public abstract class OrderBookProcessor {
                 return;
 
             case NewLimitOrder:
-                insertOrderOnLimit(message);
+                if(priceCrossingSpread(message.getPrice())){
+                    sendReject(message);
+                }else{
+                    insertOrderOnLimit(message);
+                }
                 messageObjectPool.returnObject(message);
                 return;
 
@@ -292,6 +298,10 @@ public abstract class OrderBookProcessor {
         return pair;
     }
 
+    public void setCorrespondingBook(OrderBookProcessor offerProcessor) {
+        this.correspondingProcessor = offerProcessor;
+    }
+
     public void shutdown() {
         System.out.println("Order Book Processor on ccy: [" + pair + "] on side: [" + getSide() +"] shutting down.");
         runningFlag = false;
@@ -301,8 +311,8 @@ public abstract class OrderBookProcessor {
      * Helper method to launch the processor in its own thread.
      * @param distributorInboundQueue Queue for which to poll for incoming orders / cancellations
      */
-    private void launchOrderBookProcessor(ConcurrentLinkedQueue<Message> distributorInboundQueue) {
-        Thread engineThread = new Thread(() -> {
+    private void configureOrderBookThread(ConcurrentLinkedQueue<Message> distributorInboundQueue) {
+        engineThread = new Thread(() -> {
             System.out.println("Order Book Processor on ccy: [" + pair + "] on side: [" + getSide() +"] started.");
 
             while (runningFlag) {
@@ -312,7 +322,10 @@ public abstract class OrderBookProcessor {
                 }
             }
         });
+    }
 
+    public void startOrderBook(){
+        runningFlag = true;
         engineThread.start();
     }
 
@@ -328,6 +341,8 @@ public abstract class OrderBookProcessor {
 
     protected abstract Side getOppositeSide();
 
+    protected abstract long getTopOfBookPrice();
 
+    protected abstract boolean priceCrossingSpread(long price);
 
 }
