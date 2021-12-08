@@ -219,8 +219,6 @@ public abstract class OrderBookProcessor {
             reportOrderAccepted(order);
             return limit;
         });
-
-        reevaluateTopOfBook(currentLimitLevel);
     }
 
     private void reportOrderAccepted(Order order) {
@@ -332,8 +330,6 @@ public abstract class OrderBookProcessor {
     //Methods to be implemented depending on side
 
     abstract void insertInChain(LimitLevel newLimitLevel, LimitLevel currentLimitLevel);
-
-    abstract void reevaluateTopOfBook(LimitLevel newLimitLevel);
 
     abstract LimitLevel getNextLevelLimit(LimitLevel limitLevelToExecute);
 

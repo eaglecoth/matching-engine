@@ -43,40 +43,33 @@ public class BidOrderBookProcessor extends OrderBookProcessor{
     /**
      * Limits are ordered in a sorted double linked list. When a new limit arrives, we traverse the list and insert
      * at the appropriate spot
-     * @param newLimitLevel new price level to be added
+     * @param limitToInsert new price level to be added
      * @param currentLimitLevel limit price level to compare to, normally start at top of book
      */
-    protected void insertInChain(LimitLevel newLimitLevel, LimitLevel currentLimitLevel) {
-            if (newLimitLevel.getPrice() > currentLimitLevel.getPrice()) {
-                LimitLevel newHigher = currentLimitLevel.getNextHigher();
-                if (newHigher == null) {
-                    currentLimitLevel.setNextHigher(newLimitLevel);
-                    newLimitLevel.setNextLower(currentLimitLevel);
+    protected void insertInChain(LimitLevel limitToInsert, LimitLevel currentLimitLevel) {
+            if (limitToInsert.getPrice() > currentLimitLevel.getPrice()) {
+                LimitLevel limitAboveCurrent = currentLimitLevel.getNextHigher();
+                if (limitAboveCurrent == null) {
+                    //We're inserting a new best price
+                    currentLimitLevel.setNextHigher(limitToInsert);
+                    limitToInsert.setNextLower(currentLimitLevel);
+                    topOfBook = limitToInsert;
                 }else{
-                    newHigher.setNextLower(newLimitLevel);
-                    newLimitLevel.setNextHigher(newHigher);
-                    newLimitLevel.setNextLower(currentLimitLevel);
+                    //We're inserting a new price somewhere in the middle of the book
+                    limitAboveCurrent.setNextLower(limitToInsert);
+                    limitToInsert.setNextHigher(limitAboveCurrent);
+                    limitToInsert.setNextLower(currentLimitLevel);
                     currentLimitLevel.setNextHigher(currentLimitLevel);
                 }
                 return;
 
             } else if (currentLimitLevel.getNextLower() == null) {
-                currentLimitLevel.setNextLower(newLimitLevel);
-                newLimitLevel.setNextHigher(currentLimitLevel);
+                //We're inserting a price at the bottom of the book
+                currentLimitLevel.setNextLower(limitToInsert);
+                limitToInsert.setNextHigher(currentLimitLevel);
                 return;
             }
-            insertInChain(newLimitLevel, currentLimitLevel.getNextLower());
+            //Recurse and step to the next limit in the book
+            insertInChain(limitToInsert, currentLimitLevel.getNextLower());
     }
-
-    @Override
-    void reevaluateTopOfBook(LimitLevel newLimitLevel) {
-
-        if(newLimitLevel.getPrice() > topOfBook.getPrice()){
-            topOfBook = newLimitLevel;
-        }
-    }
-
-
-
-
 }

@@ -21,14 +21,14 @@ public class OfferOrderBookProcessor extends OrderBookProcessor{
      */
     protected void insertInChain(LimitLevel newLimitLevel, LimitLevel currentLimitLevel) {
         if (newLimitLevel.getPrice() < currentLimitLevel.getPrice()) {
-            LimitLevel newLower = currentLimitLevel.getNextLower();
-            if (newLower == null) {
+            LimitLevel lowerBelowCurrent = currentLimitLevel.getNextLower();
+            if (lowerBelowCurrent == null) {
                 currentLimitLevel.setNextLower(newLimitLevel);
                 newLimitLevel.setNextHigher(currentLimitLevel);
+                topOfBook = newLimitLevel;
             }else{
-                LimitLevel newLowerLimitLevel = currentLimitLevel.getNextLower();
-                newLowerLimitLevel.setNextHigher(currentLimitLevel);
-                newLimitLevel.setNextLower(newLowerLimitLevel);
+                lowerBelowCurrent.setNextHigher(currentLimitLevel);
+                newLimitLevel.setNextLower(lowerBelowCurrent);
                 newLimitLevel.setNextHigher(currentLimitLevel);
                 currentLimitLevel.setNextLower(newLimitLevel);
             }
@@ -39,14 +39,7 @@ public class OfferOrderBookProcessor extends OrderBookProcessor{
             newLimitLevel.setNextLower(currentLimitLevel);
             return;
         }
-        insertInChain(newLimitLevel, currentLimitLevel.getNextLower());
-    }
-
-    @Override
-    void reevaluateTopOfBook(LimitLevel newLimitLevel) {
-        if(newLimitLevel.getPrice() < topOfBook.getPrice()){
-            topOfBook = newLimitLevel;
-        }
+        insertInChain(newLimitLevel, currentLimitLevel.getNextHigher());
     }
 
     @Override

@@ -399,6 +399,182 @@ public class MatchingEngineIntegrationTest {
         assertEquals(clientId2, cancelMsg.getClientId());
     }
 
+
+    @Test
+    public void extensiveBookTraversalsOfferTest() throws InterruptedException {
+
+        int client1 = 1;
+        int client2 = 2;
+        int client3 = 3;
+        int clientMarket = 4;
+        int client5 = 5;
+        int client6 = 6;
+        int clientCancel = 7;
+
+        Message message = prepareMessage(client2,2, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 4, 100);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertExecution(client2, CcyPair.BTCUSD, 4, 100, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(client1,1, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 2, 100);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertExecution(client1, CcyPair.BTCUSD, 2, 100, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(client3,3, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 6, 1000);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertExecution(client3, CcyPair.BTCUSD, 6, 1000, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientCancel,7, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 3, 1000);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        long cancel1 = assertExecution(clientCancel, CcyPair.BTCUSD, 3, 1000, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientCancel,8, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 3, 1000);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        long cancel2 = assertExecution(clientCancel, CcyPair.BTCUSD, 3, 1000, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientCancel,9, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 3, 1000);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        long cancel3 = assertExecution(clientCancel, CcyPair.BTCUSD, 3, 1000, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareCancel(cancel3);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertCancel(clientCancel, cancel3, 9);
+
+        message = prepareCancel(cancel1);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertCancel(clientCancel, cancel1, 7);
+
+        message = prepareCancel(cancel2);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertCancel(clientCancel, cancel2, 8);
+
+        message = prepareMessage(client5,5, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 4, 100);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        long orderId = assertExecution(client5, CcyPair.BTCUSD, 4, 100, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(client6,6, CcyPair.BTCUSD, Side.Offer, MessageType.NewLimitOrder, 4, 100);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertExecution(client6, CcyPair.BTCUSD, 4, 100, Side.Offer, ExecutionType.OrderAccepted);
+
+        message = prepareCancel(orderId);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertCancel(client5, orderId, 5);
+
+
+        message = prepareMessage(clientMarket,4, CcyPair.BTCUSD, Side.Bid, MessageType.NewMarketOrder, 0, 350);
+        distributorInboundQueue.add(message);
+        waitAndAssert(8, 2);
+
+        assertExecution( clientMarket, CcyPair.BTCUSD, 2, 100, Side.Bid, ExecutionType.PartialFill);
+        assertExecution( client1, CcyPair.BTCUSD, 2, 100, Side.Offer, ExecutionType.Fill);
+        assertExecution( clientMarket, CcyPair.BTCUSD, 4, 100, Side.Bid, ExecutionType.PartialFill);
+        assertExecution( client2, CcyPair.BTCUSD, 4, 100, Side.Offer, ExecutionType.Fill);
+        assertExecution( clientMarket, CcyPair.BTCUSD, 4, 100, Side.Bid, ExecutionType.PartialFill);
+        assertExecution( client6, CcyPair.BTCUSD, 4, 100, Side.Offer, ExecutionType.Fill);
+        assertExecution( clientMarket, CcyPair.BTCUSD, 6, 50, Side.Bid, ExecutionType.Fill);
+        assertExecution( client3, CcyPair.BTCUSD, 6, 50, Side.Offer, ExecutionType.PartialFill);
+
+    }
+
+
+    @Test
+    public void extensiveBookTraversalsBidTest() throws InterruptedException {
+
+        int client1 = 1;
+        int client2 = 2;
+        int client3 = 3;
+        int clientMarket = 4;
+        int client5 = 5;
+        int client6 = 6;
+        int clientCancel = 7;
+
+        Message message = prepareMessage(client2,2, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 4, 100);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertExecution(client2, CcyPair.BTCUSD, 4, 100, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(client1,1, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 6, 100);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertExecution(client1, CcyPair.BTCUSD, 6, 100, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(client3,3, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 2, 1000);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertExecution(client3, CcyPair.BTCUSD, 2, 1000, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientCancel,7, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 3, 1000);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        long cancel1 = assertExecution(clientCancel, CcyPair.BTCUSD, 3, 1000, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientCancel,8, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 3, 1000);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        long cancel2 = assertExecution(clientCancel, CcyPair.BTCUSD, 3, 1000, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(clientCancel,9, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 3, 1000);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        long cancel3 = assertExecution(clientCancel, CcyPair.BTCUSD, 3, 1000, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareCancel(cancel3);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertCancel(clientCancel, cancel3, 9);
+
+        message = prepareCancel(cancel1);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertCancel(clientCancel, cancel1, 7);
+
+        message = prepareCancel(cancel2);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertCancel(clientCancel, cancel2, 8);
+
+        message = prepareMessage(client5,5, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 4, 100);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        long orderId = assertExecution(client5, CcyPair.BTCUSD, 4, 100, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareMessage(client6,6, CcyPair.BTCUSD, Side.Bid, MessageType.NewLimitOrder, 4, 100);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertExecution(client6, CcyPair.BTCUSD, 4, 100, Side.Bid, ExecutionType.OrderAccepted);
+
+        message = prepareCancel(orderId);
+        distributorInboundQueue.add(message);
+        waitAndAssert(1, 2);
+        assertCancel(client5, orderId, 5);
+
+
+        message = prepareMessage(clientMarket,4, CcyPair.BTCUSD, Side.Offer, MessageType.NewMarketOrder, 0, 350);
+        distributorInboundQueue.add(message);
+        waitAndAssert(8, 2);
+
+        assertExecution( clientMarket, CcyPair.BTCUSD, 6, 100, Side.Offer, ExecutionType.PartialFill);
+        assertExecution( client1, CcyPair.BTCUSD, 6, 100, Side.Bid, ExecutionType.Fill);
+        assertExecution( clientMarket, CcyPair.BTCUSD, 4, 100, Side.Offer, ExecutionType.PartialFill);
+        assertExecution( client2, CcyPair.BTCUSD, 4, 100, Side.Bid, ExecutionType.Fill);
+        assertExecution( clientMarket, CcyPair.BTCUSD, 4, 100, Side.Offer, ExecutionType.PartialFill);
+        assertExecution( client6, CcyPair.BTCUSD, 4, 100, Side.Bid, ExecutionType.Fill);
+        assertExecution( clientMarket, CcyPair.BTCUSD, 2, 50, Side.Offer, ExecutionType.Fill);
+        assertExecution( client3, CcyPair.BTCUSD, 2, 50, Side.Bid, ExecutionType.PartialFill);
+
+    }
+
     private void waitAndAssert(int expectedMessages, int waitCount) throws InterruptedException {
 
         Thread.sleep(50);
@@ -448,7 +624,6 @@ public class MatchingEngineIntegrationTest {
 
     private Message prepareMessage(long clientId, long clientOrderId, CcyPair pair, Side side, MessageType type, long price, long quantity){
         Message message = new Message();
-
         message.setClientId(clientId);
         message.setClientOrderId(clientOrderId);
         message.setPair(pair);

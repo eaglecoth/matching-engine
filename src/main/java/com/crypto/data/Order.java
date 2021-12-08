@@ -99,9 +99,7 @@ public class Order {
     @Override
     public String toString() {
         return "Order{" +
-                "head=" + head +
-                ", tail=" + tail +
-                ", pair=" + pair +
+                "pair=" + pair +
                 ", side=" + side +
                 ", orderId=" + orderId +
                 ", size=" + size +
