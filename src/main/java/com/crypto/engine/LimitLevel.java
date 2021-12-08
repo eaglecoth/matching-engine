@@ -122,4 +122,13 @@ public class LimitLevel {
     public boolean isEmpty() {
         return peekInsideOfBook() == null;
     }
+
+    @Override
+    public String toString() {
+        return "LimitLevel{" +
+                "insideOfBookOrder=" + insideOfBookOrder +
+                ", outsideOfBookOrder=" + outsideOfBookOrder +
+                ", price=" + price +
+                '}';
+    }
 }
