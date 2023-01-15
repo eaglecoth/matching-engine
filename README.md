@@ -1,6 +1,6 @@
 # matching-engine
 
-Prototype matching engine.
+This project is intended to give a idea of the type of code I write. I've choosen to examplify this with an implementation of a matching engine prototype.
 
 Requirements: Java8 Junit4 Maven GitHub
 
